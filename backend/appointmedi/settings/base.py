@@ -21,6 +21,10 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'cloudinary',
     'django_filters',
+
+    'apps.users',
+    'apps.appointments',
+    'apps.payments',
 ]
 
 MIDDLEWARE = [
@@ -103,3 +107,4 @@ CORS_ALLOWED_ORIGINS = [
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
