@@ -1,12 +1,15 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework.routers import DefaultRouter
+from apps.users.views import ReviewViewSet
+
+router = DefaultRouter()
+router.register(r'', ReviewViewSet, basename='review')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/users/', include('apps.users.urls')),
+    path('api/auth/', include('apps.users.urls')),
     path('api/appointments/', include('apps.appointments.urls')),
     path('api/payments/', include('apps.payments.urls')),
+    path('api/reviews/', include(router.urls)),
 ]
