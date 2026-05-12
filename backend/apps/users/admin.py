@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User
+from .models import User, Review
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
@@ -25,5 +25,13 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
     
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ('user', 'rating', 'created_at')
+    list_filter = ('rating', 'created_at')
+    search_fields = ('user__email', 'comment')
     readonly_fields = ('created_at', 'updated_at')
 

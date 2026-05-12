@@ -53,3 +53,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_patient(self):
         return not self.is_staff
+
+class Review(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.IntegerField()
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user'], name='one_review_per_user')
+        ]
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Review by {self.user.email} - {self.rating}/5"
