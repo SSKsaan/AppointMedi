@@ -6,6 +6,12 @@ __pycache__/
 .env
 venv/
 
+# Frontend
+node_modules/
+dist/
+*.log
+.DS_Store
+
 # Others
 .vscode/
 ASSETS/
