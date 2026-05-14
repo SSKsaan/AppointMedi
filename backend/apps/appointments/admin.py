@@ -8,7 +8,7 @@ class AppointmentResponseInline(admin.StackedInline):
 
 @admin.register(AppointmentRequest)
 class AppointmentRequestAdmin(admin.ModelAdmin):
-    list_display = ('id', 'patient', 'status', 'update_count', 'created_at')
+    list_display = ('id', 'patient', 'status', 'claimed_by', 'created_at')
     list_filter = ('status', 'created_at')
     search_fields = ('patient__email', 'description')
     readonly_fields = ('created_at', 'updated_at')

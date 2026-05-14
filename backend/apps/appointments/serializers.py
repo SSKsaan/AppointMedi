@@ -7,14 +7,19 @@ User = settings.AUTH_USER_MODEL
 class AppointmentRequestSerializer(serializers.ModelSerializer):
     patient_email = serializers.EmailField(source='patient.email', read_only=True)
     patient_full_name = serializers.CharField(source='patient.full_name', read_only=True)
+    claimed_by_email = serializers.SerializerMethodField()
     response = serializers.SerializerMethodField()
     
     class Meta:
         model = AppointmentRequest
         fields = ('id', 'patient', 'patient_email', 'patient_full_name', 'description', 
-                 'status', 'update_count', 'parent_request', 'response', 
+                 'status', 'parent_request', 'claimed_by',
+                 'claimed_by_email', 'response', 
                  'created_at', 'updated_at')
-        read_only_fields = ('id', 'patient', 'status', 'update_count', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'patient', 'status', 'created_at', 'updated_at')
+
+    def get_claimed_by_email(self, obj):
+        return obj.claimed_by.email if obj.claimed_by else None
     
     def get_response(self, obj):
         if hasattr(obj, 'response') and obj.response:

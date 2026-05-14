@@ -1,7 +1,6 @@
 from django.db import models
 from django.conf import settings
-from django.core.exceptions import ValidationError
-from .constants import APPOINTMENT_STATUS_CHOICES, MAX_REQUEST_UPDATES
+from .constants import APPOINTMENT_STATUS_CHOICES
 
 class AppointmentRequest(models.Model):
     patient = models.ForeignKey(
@@ -23,7 +22,14 @@ class AppointmentRequest(models.Model):
         choices=APPOINTMENT_STATUS_CHOICES,
         default='PENDING'
     )
-    update_count = models.IntegerField(default=0)
+    claimed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='claimed_requests',
+        limit_choices_to={'is_staff': True}
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -38,12 +44,10 @@ class AppointmentRequest(models.Model):
 
     @property
     def can_patient_edit(self):
-        # Patient may edit description only when status is PENDING or INCOMPLETE.
-        return self.status in ['PENDING', 'INCOMPLETE'] and self.update_count < MAX_REQUEST_UPDATES
+        return self.status in ['PENDING', 'INCOMPLETE']
 
     @property
     def can_admin_respond(self):
-        # Admin can respond only if they have claimed it (PROCESSING).
         return self.status == 'PROCESSING'
 
 
