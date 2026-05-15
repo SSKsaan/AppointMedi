@@ -13,6 +13,15 @@ class UserSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('id', 'email', 'balance', 'is_staff', 'is_superuser', 'created_at', 'updated_at')
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        try:
+            if data.get('photo'):
+                data['photo'] = instance.photo.url
+        except Exception:
+            pass
+        return data
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
 

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Stethoscope, Shield, CreditCard, Clock, ArrowRight, Star } from 'lucide-react'
+import { Stethoscope, Shield, CreditCard, Clock, ArrowRight, Star, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/context/AuthContext'
@@ -23,6 +23,7 @@ const stats = [
 export default function Home() {
   const { user } = useAuth()
   const [reviews, setReviews] = useState([])
+  const [heroLoaded, setHeroLoaded] = useState(false)
 
   useEffect(() => {
     listReviews({ ordering: '-created_at', hidden: 'false' })
@@ -67,10 +68,15 @@ export default function Home() {
             </div>
           </div>
           <div className="flex-1">
-            <div className="relative mx-auto flex h-80 w-80 items-center justify-center sm:h-96 sm:w-96 lg:h-[550px] lg:w-[550px] lg:ml-8">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 to-cyan-300/20 blur-3xl" />
-              <img src="/images/hero.png" alt="Appointment illustration" className="relative h-full w-full animate-wiggle rounded-2xl object-cover" />
-            </div>
+              <div className="relative mx-auto flex h-80 w-80 items-center justify-center sm:h-96 sm:w-96 lg:h-[550px] lg:w-[550px] lg:ml-8">
+                {!heroLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-muted animate-pulse">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" />
+                  </div>
+                )}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 to-cyan-300/20 blur-3xl" />
+                <img src="/images/hero.png" alt="Appointment illustration" onLoad={() => setHeroLoaded(true)} className={`relative h-full w-full rounded-2xl object-cover transition-opacity duration-500 ${heroLoaded ? 'animate-wiggle opacity-100' : 'opacity-0'}`} />
+              </div>
           </div>
         </div>
       </section>

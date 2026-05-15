@@ -191,6 +191,7 @@ class AdminStatsView(APIView):
                 'id': r.id,
                 'patient_email': r.patient.email,
                 'patient_full_name': r.patient.full_name,
+                'description': r.description,
                 'status': r.status,
                 'created_at': r.created_at.isoformat(),
                 'claimed_by_email': r.claimed_by.email if r.claimed_by else None,

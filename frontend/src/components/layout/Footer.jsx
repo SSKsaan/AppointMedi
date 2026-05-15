@@ -22,8 +22,8 @@ export default function Footer() {
     <>
       <footer className="border-t bg-muted/50">
         <div className="mx-auto max-w-7xl px-6 py-12 sm:px-6 lg:px-8">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-12">
-            <div className="lg:col-span-3">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
               <h4 className="mb-3 text-sm font-semibold">Contact</h4>
               <div className="flex flex-col gap-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-2 break-words"><Mail className="h-4 w-4 shrink-0" /> <span>support@appointmedi.com</span></span>
@@ -31,7 +31,7 @@ export default function Footer() {
                 <span className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0" /> Dhaka, Bangladesh</span>
               </div>
             </div>
-            <div className="lg:col-span-3">
+            <div className="lg:pl-8">
               <h4 className="mb-3 text-sm font-semibold">Quick Links</h4>
               <div className="flex flex-col gap-2 text-sm text-muted-foreground">
                 <Link to="/" onClick={scrollTop} className="hover:text-primary">Home</Link>
@@ -48,7 +48,7 @@ export default function Footer() {
                 )}
               </div>
             </div>
-            <div className="lg:col-span-3">
+            <div className="lg:pl-4">
               <h4 className="mb-3 text-sm font-semibold">For Patients</h4>
               <div className="flex flex-col gap-2 text-sm text-muted-foreground">
                 <Link to="/appointments/new" onClick={scrollTop} className="hover:text-primary">New Appointment</Link>
@@ -56,12 +56,12 @@ export default function Footer() {
                 <Link to="/payments" onClick={scrollTop} className="hover:text-primary">Transaction History</Link>
               </div>
             </div>
-            <div className="lg:col-span-3 lg:text-right lg:col-start-10">
-              <div className="flex items-center gap-2 font-heading text-lg font-bold text-primary lg:justify-end">
+            <div className="sm:text-right lg:text-right">
+              <div className="flex items-center gap-2 font-heading text-lg font-bold text-primary sm:justify-end">
                 <Stethoscope className="h-5 w-5" />
                 AppointMedi
               </div>
-              <p className="mt-2 text-sm text-muted-foreground lg:max-w-xs lg:ml-auto">
+              <p className="mt-2 text-sm text-muted-foreground sm:ml-auto sm:max-w-xs">
                 Medical appointment mediation platform connecting patients with healthcare providers.
               </p>
             </div>

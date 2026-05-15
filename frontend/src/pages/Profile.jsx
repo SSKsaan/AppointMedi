@@ -172,16 +172,16 @@ export default function Profile() {
   if (loading) return <LoadingSpinner />
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 overflow-x-hidden">
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[380px_1fr]">
         {/* Sidebar */}
-        <div>
-          <Card>
+        <div className="min-w-0">
+          <Card className="min-w-0 overflow-hidden">
             <CardContent className="flex flex-col items-center pt-6">
               <div className="relative">
-                <Avatar className="h-24 w-24 ring-2 ring-primary/20">
-                  {photoPreview && <AvatarImage src={photoPreview} className="object-cover w-full h-full" />}
+                <Avatar className="h-20 w-20 sm:h-24 sm:w-24 ring-2 ring-primary/20">
+                  {photoPreview && <AvatarImage src={photoPreview} className="object-cover w-full h-full rounded-full" />}
                   <AvatarFallback className="text-2xl bg-primary/10 text-primary">
                     {(user?.full_name || user?.email || 'U')[0].toUpperCase()}
                   </AvatarFallback>
@@ -248,8 +248,8 @@ export default function Profile() {
         </div>
 
         {/* Main Content */}
-        <div>
-          <Card className="border-0 shadow-none">
+        <div className="min-w-0">
+          <Card className="border-0 shadow-none min-w-0 overflow-hidden">
             <CardContent className="pt-0">
               <form onSubmit={handleSave} className="space-y-6">
                 <div className="grid gap-6 sm:grid-cols-2">
@@ -293,11 +293,11 @@ export default function Profile() {
                     <Textarea id="bio" className="min-h-[100px] pl-10" placeholder="Tell us about yourself..." value={bio} onChange={(e) => setBio(e.target.value)} />
                   </div>
                 </div>
-                <div className="flex gap-3">
-                      <Button type="submit" disabled={saving}>
+                <div className="flex gap-3 max-sm:flex-col max-sm:w-full">
+                      <Button type="submit" disabled={saving} className="max-sm:w-full">
                         {saving ? 'Saving...' : 'Update Profile'}
                       </Button>
-                  <Button type="button" variant="outline" className="gap-2" onClick={() => { setPasswordError(''); setOldPassword(''); setNewPassword(''); setShowPasswordDialog(true) }}>
+                  <Button type="button" variant="outline" className="gap-2 max-sm:w-full" onClick={() => { setPasswordError(''); setOldPassword(''); setNewPassword(''); setShowPasswordDialog(true) }}>
                     <Lock className="h-4 w-4" /> Change Password
                   </Button>
                 </div>

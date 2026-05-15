@@ -4,8 +4,11 @@ import { CheckCircle, Loader2, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getPaymentHistory } from '@/api/payments'
+import { getProfile } from '@/api/auth'
+import { useAuth } from '@/context/AuthContext'
 
 export default function PaymentSuccess() {
+  const { updateUser } = useAuth()
   const [searchParams] = useSearchParams()
   const [status, setStatus] = useState('loading')
   const transactionId = searchParams.get('transaction_id')
@@ -19,7 +22,10 @@ export default function PaymentSuccess() {
       getPaymentHistory({ transaction_id: transactionId, page_size: 1 })
         .then(({ data }) => {
           const txn = data.results?.[0]
-          if (txn?.status === 'SUCCESS') setStatus('success')
+          if (txn?.status === 'SUCCESS') {
+            setStatus('success')
+            getProfile().then(({ data }) => updateUser(data)).catch(() => {})
+          }
           else if (txn?.status === 'PENDING') setStatus('pending')
           else setStatus('failed')
         })
