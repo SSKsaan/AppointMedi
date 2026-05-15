@@ -1,9 +1,11 @@
+import uuid
+from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.conf import settings
 from django.http import HttpResponseRedirect
-from django.db import transaction
+from django.db import transaction as db_transaction
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,7 +16,6 @@ from .models import Transaction
 from .serializers import TransactionSerializer
 from .constants import MAX_DEPOSIT_AMOUNT
 from sslcommerz_lib import SSLCOMMERZ
-from decimal import Decimal
 
 
 class PaymentInitiateView(APIView):
@@ -34,12 +35,7 @@ class PaymentInitiateView(APIView):
         except:
             return Response({'error': 'Invalid amount format'}, status=status.HTTP_400_BAD_REQUEST)
 
-        txn = Transaction.objects.create(
-            user=request.user,
-            amount=amount,
-            type='DEPOSIT',
-            status='PENDING'
-        )
+        transaction_id = uuid.uuid4()
 
         sslcz = SSLCOMMERZ({
             'store_id': settings.SSLCOMMERZ_STORE_ID,
@@ -50,7 +46,7 @@ class PaymentInitiateView(APIView):
         post_body = {
             'total_amount': amount,
             'currency': 'BDT',
-            'tran_id': str(txn.transaction_id),
+            'tran_id': str(transaction_id),
             'success_url': f'{settings.BACKEND_URL}/api/payments/callback/',
             'fail_url': f'{settings.BACKEND_URL}/api/payments/callback/',
             'cancel_url': f'{settings.BACKEND_URL}/api/payments/callback/',
@@ -70,18 +66,21 @@ class PaymentInitiateView(APIView):
         try:
             response = sslcz.createSession(post_body)
             if response.get('status') == 'SUCCESS' and response.get('GatewayPageURL'):
+                txn = Transaction.objects.create(
+                    user=request.user,
+                    amount=amount,
+                    type='DEPOSIT',
+                    status='PENDING',
+                    transaction_id=transaction_id
+                )
                 return Response({
                     'redirect_url': response['GatewayPageURL'],
                     'transaction_id': str(txn.transaction_id)
                 })
             else:
-                txn.status = 'FAILED'
-                txn.save()
-                return Response({'error': 'Failed to initiate payment'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Failed to initiate payment with gateway'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            txn.status = 'FAILED'
-            txn.save()
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': f'Payment gateway error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -112,7 +111,7 @@ class PaymentCallbackView(View):
             validation_response = sslcz.validationTransactionOrder(val_id)
 
             if validation_response.get('status') == 'VALID':
-                with transaction.atomic():
+                with db_transaction.atomic():
                     txn.status = 'SUCCESS'
                     txn.gateway_ref = val_id
                     txn.save()
@@ -139,14 +138,23 @@ class PaymentHistoryView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Transaction.objects.filter(user=self.request.user)
+        user = self.request.user
+        if user.is_staff:
+            queryset = Transaction.objects.select_related('user').all()
+        else:
+            queryset = Transaction.objects.filter(user=user)
 
         transaction_type = self.request.query_params.get('type')
         transaction_status = self.request.query_params.get('status')
+        visual_type = self.request.query_params.get('visual_type')
         ordering = self.request.query_params.get('ordering', '-created_at')
 
         if transaction_type:
             queryset = queryset.filter(type=transaction_type)
+        if visual_type == 'REFUND':
+            queryset = queryset.filter(type='DEPOSIT', amount__in=[Decimal('100.00'), Decimal('50.00')])
+        elif visual_type == 'DEPOSIT':
+            queryset = queryset.filter(type='DEPOSIT').exclude(amount__in=[Decimal('100.00'), Decimal('50.00')])
         if transaction_status:
             queryset = queryset.filter(status=transaction_status)
 

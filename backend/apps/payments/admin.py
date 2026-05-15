@@ -9,13 +9,10 @@ class TransactionAdmin(admin.ModelAdmin):
     readonly_fields = ('transaction_id', 'user', 'amount', 'type', 'gateway_ref', 'status', 'created_at')
 
     def has_add_permission(self, request):
-        # Transactions are created by system events (Payments/Mediation), not manually.
         return False
 
     def has_change_permission(self, request, obj=None):
-        # Transactions are immutable audit records.
         return False
 
     def has_delete_permission(self, request, obj=None):
-        # Financial records must never be deleted.
         return False
