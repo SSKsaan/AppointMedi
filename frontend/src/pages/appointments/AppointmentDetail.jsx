@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Send, CheckCircle, XCircle, AlertCircle, RefreshCw, FileText, Edit3, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -116,8 +116,11 @@ export default function AppointmentDetail() {
   const [editText, setEditText] = useState('')
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
-  const fetchAppt = () => {
-    setLoading(true)
+  const silentRef = useRef()
+  useEffect(() => { silentRef.current = () => fetchAppt(true) })
+
+  const fetchAppt = (silent) => {
+    if (!silent) setLoading(true)
     setError(null)
     getAppointment(id)
       .then(({ data }) => {
@@ -129,6 +132,7 @@ export default function AppointmentDetail() {
   }
 
   useEffect(() => { fetchAppt() }, [id])
+  useEffect(() => { const id = setInterval(() => silentRef.current?.(), 30_000); return () => clearInterval(id) }, [])
 
   const handleAction = async (action) => {
     setActionLoading(action)

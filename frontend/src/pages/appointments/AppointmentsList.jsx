@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { PlusCircle, Clock, CheckCircle, XCircle, AlertCircle, Calendar, DollarSign, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,7 @@ import { formatDate, STATUS_LABELS } from '@/lib/utils'
 const STATUS_FILTERS = ['', 'PENDING', 'PROCESSING', 'INCOMPLETE', 'RESPONDED', 'CONFIRMED', 'REJECTED', 'COMPLETED', 'CANCELLED']
 
 export default function AppointmentsList() {
-  const { user, isPatient, isAdmin } = useAuth()
+  const { isPatient } = useAuth()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -28,8 +28,11 @@ export default function AppointmentsList() {
   const [stats, setStats] = useState({})
   const pageSize = 10
 
-  const fetchAppointments = () => {
-    setLoading(true)
+  const silentRef = useRef()
+  useEffect(() => { silentRef.current = () => fetchAppointments(true) })
+
+  const fetchAppointments = (silent) => {
+    if (!silent) setLoading(true)
     setError(null)
     const params = { page, page_size: pageSize }
     if (statusFilter) params.status = statusFilter
@@ -45,8 +48,8 @@ export default function AppointmentsList() {
             PROCESSING: items.filter((a) => a.status === 'PROCESSING').length,
             RESPONDED: items.filter((a) => a.status === 'RESPONDED').length,
             CONFIRMED: items.filter((a) => a.status === 'CONFIRMED').length,
-            COMPLETED: items.filter((a) => a.status === 'COMPLETED').length,
-            CANCELLED: items.filter((a) => a.status === 'CANCELLED').length,
+            REJECTED: items.filter((a) => a.status === 'REJECTED').length,
+            INCOMPLETE: items.filter((a) => a.status === 'INCOMPLETE').length,
           })
         }
       })
@@ -55,6 +58,7 @@ export default function AppointmentsList() {
   }
 
   useEffect(() => { fetchAppointments() }, [page, statusFilter, search])
+  useEffect(() => { const id = setInterval(() => silentRef.current?.(), 30_000); return () => clearInterval(id) }, [])
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -66,8 +70,8 @@ export default function AppointmentsList() {
     { label: 'Processing', value: stats.PROCESSING || 0, icon: AlertCircle, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/20' },
     { label: 'Responded', value: stats.RESPONDED || 0, icon: Calendar, color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/20' },
     { label: 'Confirmed', value: stats.CONFIRMED || 0, icon: CheckCircle, color: 'text-green-600 bg-green-100 dark:bg-green-900/20' },
-    { label: 'Completed', value: stats.COMPLETED || 0, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/20' },
-    { label: 'Cancelled', value: stats.CANCELLED || 0, icon: XCircle, color: 'text-gray-600 bg-gray-100 dark:bg-gray-800' },
+    { label: 'Incomplete', value: stats.INCOMPLETE || 0, icon: AlertCircle, color: 'text-orange-600 bg-orange-100 dark:bg-orange-900/20' },
+    { label: 'Rejected', value: stats.REJECTED || 0, icon: XCircle, color: 'text-red-600 bg-red-100 dark:bg-red-900/20' },
   ]
 
   return (
@@ -134,16 +138,12 @@ export default function AppointmentsList() {
           ) : (
             <div className="space-y-3">
               {appointments.map((appt) => (
-                <Link key={appt.id} to={`/appointments/${appt.id}`} className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
-                  <div className="flex-1 min-w-0 max-w-[70%] sm:max-w-none">
-                    <p className="truncate text-sm font-medium">{appt.description}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {isAdmin && appt.patient_email && <span>{appt.patient_email} &middot; </span>}
-                      {formatDate(appt.created_at)}
-                      {isAdmin && appt.claimed_by_email && <span className="ml-2">Claimed by: {appt.claimed_by_email}</span>}
-                    </p>
+                <Link key={appt.id} to={`/appointments/${appt.id}`} className="flex flex-col gap-1 rounded-lg border p-4 transition-colors hover:bg-muted/50">
+                  <p className="truncate text-sm font-medium">{appt.description}</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{formatDate(appt.created_at)}</span>
+                    <StatusBadge status={appt.status} className="shrink-0" />
                   </div>
-                  <StatusBadge status={appt.status} />
                 </Link>
               ))}
             </div>

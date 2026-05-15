@@ -1,5 +1,6 @@
 from django.core.mail import send_mail
 from django.db import transaction
+import threading
 from django.db.models import Case, When, IntegerField, Value
 from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import action
@@ -12,6 +13,16 @@ from .models import AppointmentRequest, AppointmentResponse
 from .serializers import AppointmentRequestSerializer, AppointmentRequestCreateSerializer, AppointmentRequestUpdateSerializer, AppointmentResponseSerializer
 from .constants import MEDIATION_FEE
 from apps.users.permissions import IsAdminUser, IsPatientUser
+
+def send_mail_async(subject, message, from_email, recipient_list, **kwargs):
+    kwargs.setdefault('fail_silently', False)
+    t = threading.Thread(
+        target=send_mail,
+        args=(subject, message, from_email, recipient_list),
+        kwargs=kwargs,
+        daemon=True
+    )
+    t.start()
 
 class AppointmentRequestViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentRequestSerializer
@@ -142,7 +153,7 @@ class AppointmentRequestViewSet(viewsets.ModelViewSet):
             appointment_request.status = 'RESPONDED'
             appointment_request.save(update_fields=['status', 'updated_at'])
 
-            send_mail(
+            send_mail_async(
                 'Appointment Response',
                 f'Your appointment request has been responded to: {description}',
                 settings.DEFAULT_FROM_EMAIL,
@@ -187,7 +198,7 @@ class AppointmentRequestViewSet(viewsets.ModelViewSet):
             appointment_request.status = 'INCOMPLETE'
             appointment_request.save(update_fields=['status', 'updated_at'])
 
-            send_mail(
+            send_mail_async(
                 'More Information Required',
                 f'Your appointment request needs more information: {description}',
                 settings.DEFAULT_FROM_EMAIL,
@@ -224,7 +235,7 @@ class AppointmentRequestViewSet(viewsets.ModelViewSet):
             else None
         )
         if admin_email:
-            send_mail(
+            send_mail_async(
                 'Appointment Confirmed',
                 f'Your appointment response for request {appointment_request.id} has been confirmed by the patient.',
                 settings.DEFAULT_FROM_EMAIL,
@@ -261,7 +272,7 @@ class AppointmentRequestViewSet(viewsets.ModelViewSet):
             else None
         )
         if admin_email:
-            send_mail(
+            send_mail_async(
                 'Appointment Rejected',
                 f'Your appointment response for request {appointment_request.id} has been rejected by the patient.',
                 settings.DEFAULT_FROM_EMAIL,
@@ -306,12 +317,11 @@ class AppointmentRequestViewSet(viewsets.ModelViewSet):
             appointment_request.status = 'CANCELLED'
             appointment_request.save(update_fields=['status', 'updated_at'])
 
-        send_mail(
+        send_mail_async(
             'Appointment Cancelled',
             f'Your appointment request {appointment_request.id} has been cancelled.',
             settings.DEFAULT_FROM_EMAIL,
             [appointment_request.patient.email],
-            fail_silently=False,
         )
 
         serializer = self.get_serializer(appointment_request)
@@ -332,6 +342,24 @@ class AppointmentRequestViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(appointment_request)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def updates(self, request):
+        after = request.query_params.get('after')
+        if not after:
+            return Response({'error': 'after parameter is required'}, status=400)
+
+        qs = self.get_queryset().filter(updated_at__gt=after)
+        data = [
+            {
+                'id': a.id,
+                'status': a.status,
+                'description': a.description[:120],
+                'patient_email': a.patient.email,
+            }
+            for a in qs
+        ]
+        return Response(data)
 
     @action(detail=True, methods=['post'], permission_classes=[IsPatientUser])
     def follow_up(self, request, pk=None):

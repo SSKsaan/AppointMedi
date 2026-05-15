@@ -18,9 +18,13 @@ export default function BackendIndicator() {
   }), [])
 
   useEffect(() => {
+    api.get('/').catch(() => { setDisconnected(true); prev.current = true })
+  }, [])
+
+  useEffect(() => {
     if (!disconnected) return
     const id = setInterval(() => {
-      api.get('/auth/register/').catch(() => {}).then(() => {
+      api.get('/').catch(() => {}).then(() => {
         if (prev.current) {
           prev.current = false
           setDisconnected(false)

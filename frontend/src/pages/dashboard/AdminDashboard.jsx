@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Users, Calendar, TrendingUp, Shield, ExternalLink, ThumbsUp, ThumbsDown, RefreshCw, CheckCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,8 +24,11 @@ export default function AdminDashboard() {
   const [pendingPage, setPendingPage] = useState(0)
   const PENDING_PAGE_SIZE = 4
 
-  const fetchStats = () => {
-    setLoading(true)
+  const silentRef = useRef()
+  useEffect(() => { silentRef.current = () => fetchStats(true) })
+
+  const fetchStats = (silent) => {
+    if (!silent) setLoading(true)
     setError(null)
     getAdminStats()
       .then(({ data }) => setStats(data))
@@ -34,6 +37,7 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => { fetchStats() }, [])
+  useEffect(() => { const id = setInterval(() => silentRef.current?.(), 30_000); return () => clearInterval(id) }, [])
 
   const handleClaim = async (id) => {
     setClaimingId(id)
@@ -116,8 +120,8 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
-        <Card>
+      <div className="mt-8 grid gap-8 lg:grid-cols-2 overflow-x-hidden">
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>Requests by Status</CardTitle>
           </CardHeader>
@@ -128,7 +132,7 @@ export default function AdminDashboard() {
               <div className="h-[380px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={statusData} cx="50%" cy="50%" labelLine={false} outerRadius={120} dataKey="value">
+                    <Pie data={statusData} cx="50%" cy="50%" labelLine={false} outerRadius="70%" dataKey="value">
                       {statusData.map((entry, index) => (
                         <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
                       ))}
@@ -142,7 +146,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>Pending Requests</CardTitle>
           </CardHeader>
@@ -151,33 +155,25 @@ export default function AdminDashboard() {
               <EmptyState message="No pending requests" />
             ) : (
               <>
-                <div className="space-y-3 overflow-hidden" style={{ height: '376px' }}>
-                  {Array.from({ length: PENDING_PAGE_SIZE }).map((_, idx) => {
-                    const req = stats.recent_requests[pendingPage * PENDING_PAGE_SIZE + idx]
-                    if (!req) return <div key={`empty-${idx}`} className="h-[85px]" />
-                    return (
-                      <div key={req.id} className="flex items-center justify-between rounded-lg border p-3 h-[85px]">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{req.patient_full_name || req.patient_email}</p>
-                          <p className="text-xs text-muted-foreground">{formatDate(req.created_at)}</p>
-                          {req.claimed_by_email && (
-                            <p className="text-xs text-muted-foreground mt-0.5">Claimed by: {req.claimed_by_email}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                <div className="space-y-3">
+                  {stats.recent_requests.slice(pendingPage * PENDING_PAGE_SIZE, (pendingPage + 1) * PENDING_PAGE_SIZE).map((req) => (
+                    <Link key={req.id} to={`/appointments/${req.id}`} className="flex flex-col gap-1 rounded-lg border p-4 transition-colors hover:bg-muted/50">
+                      <p className="truncate text-sm font-medium">{req.description}</p>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{formatDate(req.created_at)}</span>
+                        <div className="flex shrink-0 items-center gap-1">
                           {req.status === 'PENDING' && (
-                            <Button size="icon" variant="outline" disabled={claimingId === req.id} onClick={() => handleClaim(req.id)} className="h-7 w-7">
-                              {claimingId === req.id ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5 text-primary" />}
-                            </Button>
+                            <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleClaim(req.id) }}>
+                              <Button size="icon" variant="outline" className="h-7 w-7" title="Claim" disabled={claimingId === req.id}>
+                                {claimingId === req.id ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5 text-primary" />}
+                              </Button>
+                            </span>
                           )}
                           <StatusBadge status={req.status} />
-                          <Link to={`/appointments/${req.id}`}>
-                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">View</Button>
-                          </Link>
                         </div>
                       </div>
-                    )
-                  })}
+                    </Link>
+                  ))}
                 </div>
                 <div className="flex items-center justify-center gap-2 pt-5">
                   <Button variant="outline" size="sm" disabled={pendingPage === 0} onClick={() => setPendingPage(pendingPage - 1)}>
